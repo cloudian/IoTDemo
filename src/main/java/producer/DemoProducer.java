@@ -18,20 +18,22 @@ import java.io.InputStreamReader;
 
 public class DemoProducer {
 
-		private final static String TOPIC = "new-topic";
-		private final static String BOOTSTRAP_SERVERS = "10.10.0.86:9092";
+		private final static String TOPIC = "replicated-topic";
+		private final static String BOOTSTRAP_SERVERS = "10.10.0.86:9092, 10.10.0.86:9093";
 		private final static String intSerializer = "org.apache.kafka.common.serialization.IntegerSerializer";
 		private final static String stringSerializer ="org.apache.kafka.common.serialization.StringSerializer";
 		private final static int SECONDS = 1;
 		private final static int PARTITIONS = 0; //zero indexed
+		private static Producer<Integer, String> producer;
 
 		public static void main(String[] args) throws Exception {
 			//runProducer(5);
+			producer = createProducer();
 			ScheduledExecutorService readData = Executors.newScheduledThreadPool(5);
 			Runnable runnable = new Runnable() {
 				public void run() {
 					try {
-						runProducer();
+						runProducer(5);
 					} catch (Exception e) {
 						Thread t = Thread.currentThread();
     					t.getUncaughtExceptionHandler().uncaughtException(t, e);
@@ -39,6 +41,7 @@ public class DemoProducer {
 				}
 			};
 			readData.scheduleAtFixedRate(runnable, 0, 1000*SECONDS, TimeUnit.MILLISECONDS);
+			System.out.println("ffffffffff closed cccccccccccccccccc");
 		}
 
 		private static Producer<Integer, String> createProducer() {
@@ -50,16 +53,19 @@ public class DemoProducer {
 			return producer;
 		}
 
-		public static void runProducer() throws Exception {
-			final Producer<Integer, String> producer = createProducer();
+		public static void runProducer(int p) throws Exception {
+			//final Producer<Integer, String> producer = createProducer();
 			int partition = 0;
 			try {
-				//String data = "fake shit";
-				String data = getTemp();
-				final ProducerRecord<Integer, String> record = new ProducerRecord<>(
-					TOPIC, /*partition, timestamp,*/partition, data);
+				String data = "not real shit";
+				for (int i = 0; i < p; i++) {
+				//String data = getTemp();
+					final ProducerRecord<Integer, String> record = new ProducerRecord<>(
+					TOPIC, partition, data);
+					RecordMetadata metadata = producer.send(record/*, new DemoProducerCallback()*/).get();
+				}
 
-				RecordMetadata metadata = producer.send(record/*, new DemoProducerCallback()*/).get();
+
 				partition = increment(partition, PARTITIONS);
 
 				  /*
@@ -73,9 +79,11 @@ public class DemoProducer {
 				
 				//input.close();
 
-		  	} finally {
-			  producer.flush();
-			  producer.close();
+		  	//} finally {
+			//  producer.flush();
+			//  producer.close();
+		  	} catch (Exception e) {
+		  		System.out.println(e);
 		  	}
 		}
 
